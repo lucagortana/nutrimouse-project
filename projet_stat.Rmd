@@ -1,0 +1,38 @@
+---
+title: "projet_stat"
+output:
+  word_document: default
+date: "2023-01-18"
+---
+
+```{r, echo=FALSE}
+setwd("~/Documents/3A/Stats/projet") #mettre votre directory
+```
+
+
+## Librairies
+```{r setup, include=FALSE}
+library(corrplot)
+library(FactoMineR)
+library(factoextra)
+library(glmnet)
+```
+
+## Dataframe
+
+```{r}
+load('nutrimouse.rda')
+```
+
+## Pre-processing
+
+```{r}
+data_gene = nutrimouse[['gene']]
+data_lipid = nutrimouse[['lipid']]
+diet = nutrimouse[['diet']]
+genotype = nutrimouse[['genotype']]
+data_both = cbind(data_gene, data_lipid)
+data_both_gen = cbind(diet, data_both)
+data = cbind(genotype, data_both_gen)
+rm(data_gene, data_lipid, diet, genotype, data_both, data_both_gen, nutrimouse)
+```
