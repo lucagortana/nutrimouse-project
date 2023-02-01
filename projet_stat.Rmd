@@ -93,3 +93,6 @@ boxplot(data_gen[,4]~data_gen[,2], col = "green")
 heatmap(abs(cor(data_gen[, -c(1,2)])), symm = TRUE)
 ```
 
+```{r}
+heatmap(abs(cor(data[, -c(1,2)])), symm = TRUE)
+```
