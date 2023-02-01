@@ -82,6 +82,14 @@ fviz_eig(res.pca, addlabels = TRUE, ylim = c(0,50)) #graphe avec inertie
 ```
 
 ```{r}
+boxplot(data_gen[,3]~data_gen[,2], col = "green")
+```
 
+```{r}
+boxplot(data_gen[,4]~data_gen[,2], col = "green")
+```
+
+```{r}
+heatmap(abs(cor(data_gen[, -c(1,2)])), symm = TRUE)
 ```
 
