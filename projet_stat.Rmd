@@ -9,6 +9,10 @@ date: "2023-01-18"
 setwd("~/Documents/3A/Stats/projet") #mettre votre directory
 ```
 
+Dans les données « nutrimouse », nous avons les mesures de l'expression de 120 gènes potentiellement impliqués dans les problèmes nutritionnels des souris, les concentrations de 21 acides gras hépatiques et les génotypes de 40 souris soumises à 5 différents régimes.
+
+"PPAR" est une abréviation pour "Peroxisome Proliferator-Activated Receptor", qui est un récepteur dans les cellules qui régule divers processus métaboliques, tels que la décomposition des graisses et la production d'énergie. 
+
 
 ## Librairies
 ```{r setup, include=FALSE}
@@ -16,6 +20,7 @@ library(corrplot)
 library(FactoMineR)
 library(factoextra)
 library(glmnet)
+library(MultiVarSel)
 ```
 
 ## Dataframe
@@ -38,7 +43,14 @@ rm(data_gene, data_lipid, diet, genotype, data_both, data_both_gen, nutrimouse)
 ```
 
 ```{r}
-summary(data)
+#summary(data)
+str(data)
+```
+
+```{r}
+X1 <- data[, 1]
+X2 <- data[, 2]
+table(X1, X2)
 ```
 
 ## Matrices de corrélation sur l'ensemble des individus
@@ -56,12 +68,12 @@ corrplot(cor(data_lipid[, 3:23]))
 ## Matrices de corrélation sur chaque groupe de souris (wt ou ppar)
 
 ```{r}
-data_lipid_wt <- cbind(data[, 1:2], data[1:20, 123:143])
+data_lipid_wt <- cbind(data[1:20, 1:2], data[1:20, 123:143])
 corrplot(cor(data_lipid_wt[,3:23]))
 ```
 
 ```{r}
-data_lipid_ppar <- cbind(data[,1:2], data[21:40, 123:143])
+data_lipid_ppar <- cbind(data[21:40,1:2], data[21:40, 123:143])
 corrplot(cor(data_lipid_ppar[3:23]))
 ```
 
@@ -96,3 +108,54 @@ heatmap(abs(cor(data_gen[, -c(1,2)])), symm = TRUE)
 ```{r}
 heatmap(abs(cor(data[, -c(1,2)])), symm = TRUE)
 ```
+
+```{r}
+ref_data <- subset(data, diet == "ref")
+```
+
+## Selection de variables 
+
+
+Soit Y la matrice des acides gras
+En ligne les individus en colonnes les differents acides gras.
+Soit X la matrice des variables explicatives : les gènes. 
+
+On suppose une indépendance des lignes sur les Ei.
+
+```{r}
+Y <- as.matrix(data_lipid[, -c(1, 2)])
+X1 <- as.matrix(data[1])
+X2 <- as.matrix(data[2])
+dim(Y)
+dim(X1)
+dim(X2)
+```
+
+```{r}
+X <- model.matrix(lm(Y~X1+0)) # on crée la matrice de design
+p <- ncol(X) #2
+n <- nrow(X) #40
+q <- dim(Y)[2] #21
+```
+
+```{r}
+Y <- scale(Y)
+Y
+```
+
+```{r}
+acp.res = PCA(Y, scale.unit = TRUE, nc = dim(Y)[2], graph = TRUE)
+#fviz_pca_var(acp.res)
+fviz_pca_ind(acp.res, geom.ind = "point", col.ind = X2)
+```
+
+
+```{r}
+residuals <- lm(Y~X)$residuals
+pvalue = whitening_test(residuals)
+pvalue
+```
+
+
+
+
