@@ -148,14 +148,73 @@ acp.res = PCA(Y, scale.unit = TRUE, nc = dim(Y)[2], graph = TRUE)
 #fviz_pca_var(acp.res)
 fviz_pca_ind(acp.res, geom.ind = "point", col.ind = X2)
 ```
-
+Sélection des variables
 
 ```{r}
-residuals <- lm(Y~X)$residuals
+residuals <- lm(Y~X-1)$residuals
 pvalue = whitening_test(residuals)
 pvalue
 ```
 
+P-value très faible, on rejette notre H0: nos colonnes sont dépendantes.
+H0 = colonnes indépendantes,
+H1 = colonnes dépendantes.
 
+Nous ne pouvons pas vectoriser notre Y tel quel, il faut rendre indépendantes nos colonnes.
+
+Nous allons blanchir nos données. Il faut choisir la méthode de blanchiement la plus adaptée.
+
+```{r}
+result=whitening_choice(residuals,c("AR1","nonparam","ARMA"),pAR=1,qMA=1)
+result
+```
+
+Il faut connaître les différents principes associés à ces méthodes. Nous choisissons la méthode non-paramétrique.
+
+```{r}
+square_root_inv_hat_Sigma=whitening(residuals,"nonparam",pAR=1,qMA=0)
+square_root_inv_hat_Sigma
+```
+
+--> Matrice par laquelle nous multiplions notre formule Y = XB + E afin de rendre indépendantes nos colonnes.
+
+```{r}
+# Blanchiement / vectorisation / LASSO / Stability selection 
+Frequencies=variable_selection(Y,X,square_root_inv_hat_Sigma,nb_repli=500,parallel=FALSE)
+head(Frequencies)
+```
+
+Dans la technique de "stability selection", nous allons sous-echantillonner plusieurs fois la moitié de nos observations. Ensuite, il calcule l'estimateur B à partir de ce sous-echantillon (en LASSO). À chaque itération on va regarder quelle variable explicative a été considérée comme informative. À la fin, on obtient le dataframe "Frequencies" avec la "fréquence de sélection" associé à chaque lipide et chaque génotype.
+
+```{r}
+Frequencies[Frequencies$frequency>=1,]
+```
+
+```{r}
+colnames(Frequencies)<-c('Names_of_Y','Names_of_X','frequency')
+Frequencies$Names_of_X<-sub('X1','',Frequencies$Names_of_X)
+Frequencies$Names_of_X # "class0" "East" "West"
+Frequencies$Names_of_Y<-as.numeric(gsub('X','',gsub('\\.1$','',Frequencies$Names_of_Y)))
+Frequencies$Names_of_Y
+```
+
+```{r}
+p<-ggplot(data=Frequencies[Frequencies$frequency>=0.95,],aes(x=Names_of_Y,y=Names_of_X,color=frequency))+geom_tile(size=0.75)+scale_color_gradient2(midpoint=0.95,mid ='orange')+theme_bw()+ylab('Levels of X')+xlab('m/z')
+p
+```
+
+```{r}
+p<-ggplot(data=Frequencies[Frequencies$frequency==1,],aes(x=Names_of_Y,y=Names_of_X,color=Names_of_X))+geom_point(size=1)+theme_bw()+ylab('Levels of X')+xlab('m/z') 
+p
+```
+
+```{r}
+new_lipid <- data_lipid[, -c(1, 2)][,Frequencies[Frequencies$frequency==1,]$Names_of_Y]
+```
+
+```{r}
+resultats <- lm(as.matrix(new_lipid) ~ X)
+summary(resultats)
+```
 
 
