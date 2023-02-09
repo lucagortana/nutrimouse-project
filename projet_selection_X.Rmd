@@ -1,0 +1,68 @@
+---
+title: "projet_selection_X"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 
+selection variable sur les genes qui correspondent à nos X
+
+```{r }
+gene <- (nutrimouse$gene)
+head(gene)
+```
+```{r}
+class(gene)
+```
+```{r}
+Y=nutrimouse$lipid['C16.0'][,1]
+Y
+```
+
+```{r}
+### APPROCHE LASSO 
+library(glmnet)
+X=as.matrix(gene)
+Y=nutrimouse$lipid['C16.0'][,1]
+
+##### Lambda_cv
+cv_glmnet=cv.glmnet(x=X,y=Y,family="gaussian")
+lambda_cv=cv_glmnet$lambda.min
+glmnet_gene=glmnet(x=X,y=Y,family="gaussian",lambda=lambda_cv)
+beta_gene=glmnet_gene$beta
+intercept_gene=glmnet_gene$a0
+
+### Variables sélectionnées
+colnames(X)[which(beta_gene!=0)]
+beta_gene[which(beta_gene!=0)]
+
+
+```
+```{r}
+lambda_cv
+```
+
+
+```{r}
+X_selec = X[,Colonnes]
+res = lm(Y~X_selec)
+summary(res)
+```
+```{r}
+#class(summary(res))
+class(res$coefficients)
+res$coefficients’
+signicatif_var = summary(res)[which('Pr(>|t|)'>0.05)]
+signicatif_var
+```
+
+```{r}
+res_base = lm(Y~X[,1:20])
+summary(res_base)
+```
+
+
+
